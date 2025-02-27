@@ -1,0 +1,248 @@
+/* UploadResume.css - Styling for the resume upload component */
+
+.upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+  
+  .upload-header {
+    text-align: center;
+    margin-bottom: 30px;
+    width: 100%;
+  }
+  
+  .upload-header h1 {
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  
+  .upload-header p {
+    color: #666;
+    font-size: 16px;
+  }
+  
+  .upload-area {
+    width: 100%;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  
+  .upload-area.active {
+    border-color: #0056b3;
+    background-color: #f0f7ff;
+  }
+  
+  .upload-area.has-file {
+    background-color: #f0f7ff;
+    border-color: #0056b3;
+  }
+  
+  .upload-icon {
+    font-size: 48px;
+    color: #999;
+    margin-bottom: 15px;
+  }
+  
+  .upload-text {
+    color: #333;
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: normal;
+  }
+  
+  .upload-subtext {
+    color: #666;
+    margin: 10px 0;
+  }
+  
+  .file-input {
+    display: none;
+  }
+  
+  .browse-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #1e293b;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+    margin-bottom: 10px;
+  }
+  
+  .browse-btn:hover {
+    background-color: #0f172a;
+  }
+  
+  .file-format {
+    color: #999;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+  
+  .file-preview {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .file-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .file-icon {
+    color: #e74c3c;
+    font-size: 24px;
+    margin-right: 15px;
+  }
+  
+  .file-details h4 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-size: 16px;
+  }
+  
+  .file-details p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+  }
+  
+  .change-file-btn {
+    padding: 6px 12px;
+    background-color: transparent;
+    color: #0056b3;
+    border: 1px solid #0056b3;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  
+  .change-file-btn:hover {
+    background-color: #f0f7ff;
+  }
+  
+  .status {
+    width: 100%;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 14px;
+  }
+  
+  .status.error {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+  
+  .status.success {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+  
+  .progress-container {
+    width: 100%;
+    margin: 15px 0;
+  }
+  
+  .progress-bar {
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background-color: #0056b3;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  
+  .progress-text {
+    text-align: right;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    width: 100%;
+  }
+  
+  .upload-btn, .analyze-btn {
+    padding: 12px 24px;
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin: 0 10px;
+  }
+  
+  .upload-btn:hover, .analyze-btn:hover {
+    background-color: #0f172a;
+  }
+  
+  .upload-btn:disabled, .analyze-btn:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+  
+  .analyze-btn {
+    background-color: #15803d;
+  }
+  
+  .analyze-btn:hover {
+    background-color: #166534;
+  }
+  
+  @media (max-width: 768px) {
+    .upload-container {
+      padding: 15px;
+      margin: 20px 15px;
+    }
+    
+    .upload-area {
+      padding: 30px 15px;
+    }
+    
+    .file-preview {
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .upload-btn, .analyze-btn {
+      width: 100%;
+      margin: 5px 0;
+    }
+  }
