@@ -23,7 +23,15 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Predefined skill list (expand with JD analysis)
-skill_db = set(["HTML", "CSS", "JavaScript", "Python", "SQL", "Java", "AWS", "React", "Node.js", "Excel"])
+skill_db = set([
+    "Microsoft Office", "Product Management", "Roadmap Planning", "Agile Methodologies",
+    "Data Analysis", "Market Research", "Business Analytics", "Wireframing",
+    "Prototyping", "SQL", "Python", "Strategic Thinking", "Stakeholder Management",
+    "Leadership", "Problem Solving", "Critical Thinking", "Adaptability", "Java",
+    "HTML", "CSS", "JavaScript", "Next.js", "MySQL", "MongoDB", "Git", "GitHub",
+    "Figma", "Koha", "PostgreSQL", "Firebase", "Unit Testing", "TypeScript", "SSR",
+    "Vercel"
+])
 
 # Load pre-scraped jobs
 try:
@@ -34,12 +42,45 @@ except FileNotFoundError:
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def parse_resume(text):
+    doc = nlp(text)
+    sections = {}
+    current_section = None
+    for line in text.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if re.match(r"^(Skills|Experience|Education|Certifications|Projects|Professional Experience)\b", line, re.IGNORECASE):
+            current_section = line.split(":")[0].lower().replace("professional experience", "experience")
+            sections[current_section] = []
+        elif current_section:
+            sections[current_section].append(line)
 
+    skills_text = " ".join(sections.get("skills", [])) or text  # Use full text if skills section is empty
+    skills_doc = nlp(skills_text)
+    skills = list(dict.fromkeys([token.text for token in skills_doc if token.text in skill_db and len(token.text) > 2]))  # Deduplicate, filter short tokens
+    if not skills:
+        skills = list(dict.fromkeys([token.text for token in doc if token.text in skill_db and len(token.text) > 2]))  # Deduplicate
+
+    experience = sections.get("experience", [])
+    if not experience:
+        experience = [sent.text.strip() for sent in doc.sents if re.search(r"intern|experience|worked|employed", sent.text.lower())]
+
+    education = sections.get("education", [])
+    if not education:
+        education = [sent.text.strip() for sent in doc.sents if re.search(r"university|college|degree|bachelor|master|grade|institute", sent.text.lower())]
+
+    certifications = sections.get("certifications", [])
+    if not certifications and any("certification" in sent.text.lower() or "issued" in sent.text.lower() for sent in doc.sents):
+        certifications = [sent.text.strip() for sent in doc.sents if re.search(r"certification|issued", sent.text.lower())]
+
+    return skills, experience, education, certifications
 def extract_contact_info(text):
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}\b'
     email = re.findall(email_pattern, text)
-    phone_pattern = r'\b(?:\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b'
-    phone = re.findall(phone_pattern, text)
+    phone_pattern = r'(?<!\d)(?:\+?\d{1,3}[-.\s]?)?\d{6,10}(?!\d)'
+    phone = [p for p in re.findall(phone_pattern, text) if len(p) in [10, 11] and p.isdigit()]  # Filter for 10-11 digit numbers
+    print(f"Extracted emails: {email}, phones: {phone}")  # Debug print
     return email, phone
 
 def parse_pdf(file_path):
@@ -72,61 +113,17 @@ def upload_file():
         file.save(file_path)
         
         try:
-            # Extract text based on file type
             if filename.endswith('.pdf'):
                 text = parse_pdf(file_path)
             elif filename.endswith('.docx'):
                 text = parse_docx(file_path)
+            print(f"Extracted text: {text}")  # Debug print
             
-            # Extract contact info
             emails, phones = extract_contact_info(text)
+            skills, experience, education, certifications = parse_resume(text)
 
-            # NLP Parsing with SpaCy
-            doc = nlp(text)
-
-            # Section Detection with Regex
-            sections = {}
-            current_section = None
-            for line in text.split("\n"):
-                line = line.strip()
-                if not line:
-                    continue
-                if re.match(r"^(Skills|Experience|Education|Work History|Projects)\b", line, re.IGNORECASE):
-                    current_section = line.split(":")[0].lower()
-                    sections[current_section] = []
-                elif current_section:
-                    sections[current_section].append(line)
-
-            # Extract Skills
-            skills_text = " ".join(sections.get("skills", []))
-            skills_doc = nlp(skills_text)
-            skills = [token.text for token in skills_doc if token.text in skill_db]
-            if not skills:  # Fallback
-                skills = [token.text for token in doc if token.text in skill_db]
-
-            # Extract Experience
-            experience = sections.get("experience", []) or sections.get("work history", [])
-            if not experience:
-                experience = [sent.text.strip() for sent in doc.sents if re.search(r"experience|intern|worked|employed", sent.text.lower())]
-
-            # Extract Education
-            education = sections.get("education", [])
-            if not education:
-                education = [sent.text.strip() for sent in doc.sents if re.search(r"university|college|degree|bachelor|master", sent.text.lower())]
-
-            # Match with Jobs
-            resume_text = " ".join(skills)
-            matches = []
-            for job in jobs:
-                vectors = TfidfVectorizer().fit_transform([resume_text, job["desc"]])
-                match = cosine_similarity(vectors[0], vectors[1])[0] * 100
-                if match > 50:
-                    matches.append({"title": job["title"], "match": round(match, 2), "link": job["link"]})
-
-            # Clean up
             os.remove(file_path)
 
-            # Return JSON for API and render template for UI
             return jsonify({
                 'success': True,
                 'data': {
@@ -135,7 +132,7 @@ def upload_file():
                     'skills': skills,
                     'experience': experience,
                     'education': education,
-                    'matches': matches
+                    'certifications': certifications
                 }
             })
         
