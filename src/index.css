@@ -2,4 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
 
+.container {
+  @apply mx-auto px-4 py-8;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Add any additional custom styles here */

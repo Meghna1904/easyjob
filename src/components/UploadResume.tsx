@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { parseResume } from '../utils/resumeParser';
-import { CourseRecommender } from './CourseRecommender';
-import { ResumeScore } from './ResumeScore';
 import { ResumeViewer } from './ResumeViewer';
-import { Upload, FileUp, Eye, EyeOff, Check, X } from 'lucide-react';
-
+import { ResumeScore } from './ResumeScore';
+import { Upload, FileUp, Eye, EyeOff } from 'lucide-react';
+import { FiCheck } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 const UploadResume: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [resumeData, setResumeData] = useState<any>(null);
@@ -60,6 +60,20 @@ const UploadResume: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Updated scoring sections based on backend data
+  const scoreSections = ['Education', 'Experience', 'Skills', 'Certifications'];
+  const calculateScore = () => {
+    let score = 0;
+    scoreSections.forEach(section => {
+      if (resumeData && resumeData[section.toLowerCase()] && resumeData[section.toLowerCase()].length > 0) {
+        score += 25; // 25 points per section
+      }
+    });
+    return Math.min(score, 100); // Cap at 100
+  };
+
+  const currentScore = resumeData ? calculateScore() : 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -129,55 +143,44 @@ const UploadResume: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-500">Name</p>
-                  <p className="font-medium">{resumeData.name}</p>
+                  <p className="font-medium">{resumeData.name}</p> {/* Placeholder; update if backend provides name */}
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{resumeData.email}</p>
+                  <p className="font-medium">{resumeData.emails[0]}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Contact</p>
-                  <p className="font-medium">{resumeData.mobile}</p>
+                  <p className="font-medium">{resumeData.phone_numbers[0]}</p>
                 </div>
               </div>
             </div>
 
-            {/* Skills Analysis Section */}
             <div className="bg-white/50 backdrop-blur-lg rounded-xl p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-4">Skills Analysis</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-gray-600">Resume Score</p>
-                  <p className="text-lg font-semibold">75/100</p>
+                  <p className="text-lg font-semibold">{currentScore}/100</p>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: '75%' }}></div>
+                  <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${currentScore}%` }}></div>
                 </div>
                 <div className="space-y-2">
                   <p className="text-gray-600">Suggestions to improve your resume:</p>
                   <ul className="space-y-2">
-                    <li className="flex items-center text-red-600">
-                      <X className="w-4 h-4 mr-2" />
-                      Add Objective
-                    </li>
-                    <li className="flex items-center text-red-600">
-                      <X className="w-4 h-4 mr-2" />
-                      Add Education
-                    </li>
-                    <li className="flex items-center text-red-600">
-                      <X className="w-4 h-4 mr-2" />
-                      Add Experience
-                    </li>
-                    <li className="flex items-center text-red-600">
-                      <X className="w-4 h-4 mr-2" />
-                      Add Achievements
-                    </li>
+                    {scoreSections.map(section => (
+                      <li key={section} className={`flex items-center ${resumeData[section.toLowerCase()] && resumeData[section.toLowerCase()].length > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {resumeData[section.toLowerCase()] && resumeData[section.toLowerCase()].length > 0 ? 
+                          <FiCheck className="w-4 h-4 mr-2" /> : <FiX className="w-4 h-4 mr-2" />}
+                        {section} {resumeData[section.toLowerCase()] && resumeData[section.toLowerCase()].length > 0 ? 'included' : 'missing'}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
             </div>
 
-            {/* Course Recommendations Section */}
             <div className="bg-white/50 backdrop-blur-lg rounded-xl p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-4">Course Recommendations</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -200,7 +203,6 @@ const UploadResume: React.FC = () => {
               </div>
             </div>
 
-            {/* Toggle PDF Preview */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Resume Preview</h2>
               <button
@@ -221,7 +223,6 @@ const UploadResume: React.FC = () => {
               </button>
             </div>
 
-            {/* Conditionally Render PDF Preview */}
             {showPdfPreview && file && <ResumeViewer file={file} />}
           </div>
         )}

@@ -9,10 +9,11 @@ import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import date
+from flask_cors import CORS
 
 app = Flask(__name__)
 nlp = spacy.load("en_core_web_sm")
-
+CORS(app)
 # Configure upload folder
 UPLOAD_FOLDER = 'easyjob/backend/uploads'
 ALLOWED_EXTENSIONS = {'pdf', 'docx'}
@@ -74,7 +75,64 @@ def parse_resume(text):
     if not certifications and any("certification" in sent.text.lower() or "issued" in sent.text.lower() for sent in doc.sents):
         certifications = [sent.text.strip() for sent in doc.sents if re.search(r"certification|issued", sent.text.lower())]
 
-    return skills, experience, education, certifications
+    return skills, experience, education, certifications 
+
+def extract_name(text):
+    """Extracts the name from the resume text using multiple strategies."""
+    # Strategy 1: Look at the very first line or two, which often contains the name
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    if lines and len(lines[0].split()) <= 4:  # Most names are 1-4 words
+        # Check if the first line doesn't contain common non-name words
+        first_line = lines[0]
+        non_name_words = ["resume", "cv", "curriculum", "vitae", "profile", "application"]
+        if not any(word.lower() in first_line.lower() for word in non_name_words):
+            return first_line
+    
+    # Strategy 2: Extract from email if present
+    # Many people use name patterns in their email addresses
+    email_pattern = r'\b([A-Za-z0-9._%+-]+)@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}\b'
+    email_matches = re.findall(email_pattern, text)
+    if email_matches:
+        email_username = email_matches[0]
+        # Extract potential name parts from email
+        name_parts = re.findall(r'[A-Za-z]{3,}', email_username)
+        if name_parts:
+            # If we find parts that look like names in the email (3+ letters)
+            # Look for these parts in the text to validate they're likely names
+            for part in name_parts:
+                if part.lower() not in ['mail', 'email', 'contact', 'work', 'job', 'careers', 'admin']:
+                    # Search for this name part in the first few lines
+                    first_text = ' '.join(lines[:5])
+                    name_regex = re.compile(r'\b' + re.escape(part) + r'\b', re.IGNORECASE)
+                    if name_regex.search(first_text):
+                        # Find the complete name containing this part
+                        for line in lines[:5]:
+                            if name_regex.search(line) and len(line.split()) <= 4:
+                                return line
+    
+    # Strategy 3: Use NER but with more context
+    doc = nlp(' '.join(lines[:10]))  # Analyze first 10 lines
+    
+    # Look for PERSON entities
+    for ent in doc.ents:
+        if ent.label_ == "PERSON":
+            # Avoid misidentifying section headers as names
+            if ent.text.lower() not in ["skills", "experience", "education", "algorithms", 
+                                        "certifications", "projects", "work experience", 
+                                        "professional experience"]:
+                return ent.text
+    
+    # Strategy 4: Look for capitalized words in the beginning that might be a name
+    for line in lines[:3]:
+        words = line.split()
+        if len(words) <= 4 and all(word[0].isupper() for word in words if word):
+            # Check that this isn't a header
+            if not any(header.lower() in line.lower() for header in 
+                      ["resume", "cv", "curriculum", "vitae", "profile", "application"]):
+                return line
+    
+    # If all strategies fail, return None
+    return None
 def extract_contact_info(text):
     email_pattern = r'\b[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}\b'
     email = re.findall(email_pattern, text)
@@ -100,6 +158,7 @@ def parse_docx(file_path):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    
     if 'resume' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -118,7 +177,7 @@ def upload_file():
             elif filename.endswith('.docx'):
                 text = parse_docx(file_path)
             print(f"Extracted text: {text}")  # Debug print
-            
+            name = extract_name(text)
             emails, phones = extract_contact_info(text)
             skills, experience, education, certifications = parse_resume(text)
 
@@ -127,6 +186,7 @@ def upload_file():
             return jsonify({
                 'success': True,
                 'data': {
+                    'name': name ,
                     'emails': emails,
                     'phone_numbers': phones,
                     'skills': skills,
